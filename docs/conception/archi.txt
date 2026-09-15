@@ -1,0 +1,11 @@
+safebase/
+├── backend/
+├── frontend/
+├── docs/
+│   └── conception/
+│       ├── ucd.png
+│       ├── mcd.png
+│       ├── mld.png
+│       └── architecture.png
+├── docker-compose.yml
+└── README.md
