@@ -1,0 +1,85 @@
+================================================
+       PROJECT SPECIFICATIONS — SAFEBASE
+================================================
+
+
+1. PROJECT OVERVIEW
+--------------------
+Safebase is a web application for managing the
+backup and restoration of MySQL and PostgreSQL
+databases through a REST API.
+
+The goal is to provide a simple and reliable
+interface to prevent any data loss
+(e.g. accidental DROP DATABASE).
+
+
+2. TECH STACK
+--------------
+Frontend  : Angular 17
+Backend   : Node.js + Express
+Databases : MySQL & PostgreSQL
+Scheduler : node-cron
+Docker    : Docker + Docker Compose
+Tests     : Jest
+
+
+3. EXPECTED FEATURES
+---------------------
+- Add and manage database connections
+- Manual backup of a database
+- Restore a backup
+- Automatic scheduling (CRON)
+- Backup history and version management
+- Logs and alerts (success / errors)
+- Clean and responsive user interface
+
+
+4. ARCHITECTURE
+----------------
+Angular (frontend)
+      ↕ HTTP / REST
+Node.js + Express (backend)
+      ↕ subprocess
+mysqldump / pg_dump
+      ↕
+Backup files (Docker volume)
+
+
+5. DATABASE SCHEMA (MLD)
+-------------------------
+TABLE database    → registered connections
+TABLE backup      → generated files (FK: database)
+TABLE schedule    → CRON rules (FK: database)
+TABLE log         → action history (FK: backup)
+
+
+6. DELIVERABLES
+----------------
+- Public GitHub repo : plateforme-safebase
+- Functional and tested REST API
+- Angular frontend connected to the API
+- Docker Compose (API + MySQL + PostgreSQL + Front)
+- Functional tests (Jest)
+- docs/ folder with UCD, MCD, MLD
+- Complete README
+
+
+7. TASK DISTRIBUTION (to be defined with team)
+------------------------------------------------
+[ ] Backend Node.js + REST API
+[ ] Frontend Angular
+[ ] Docker & integration
+[ ] Tests & documentation
+
+
+8. LEARNING OBJECTIVES
+-----------------------
+- MySQL & PostgreSQL database management
+- Backend development (REST API)
+- System command execution
+- Frontend development (Angular)
+- Automation and scripting (CRON)
+- Docker containerization
+
+================================================
