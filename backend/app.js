@@ -17,6 +17,19 @@ app.get('/hello', (req, res) => {
   res.json({ status: 'ok', message: 'hello' })
 })
 
+const mysqlPool = require('./db/mysql')
+const pgPool = require('./db/postgres')
+
+// test mysql
+mysqlPool.getConnection()
+  .then(() => console.log('MySQL connected'))
+  .catch(err => console.error('MySQL error:', err.message))
+
+// test postgres
+pgPool.connect()
+  .then(() => console.log('PostgreSQL connected'))
+  .catch(err => console.error('PostgreSQL error:', err.message))
+
 // Routes (we'll add them here later)
 // app.use('/api/databases', require('./routes/databases'))
 // app.use('/api/backups', require('./routes/backups'))
@@ -25,4 +38,9 @@ app.get('/hello', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Safebase API running on http://localhost:${PORT}`)
+  const migrate = require('./db/migrate')
+  
+  // after your middleware setup
+  migrate().catch(console.error)
 })
+
