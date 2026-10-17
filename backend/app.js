@@ -9,13 +9,13 @@ const PORT = process.env.PORT || 3000
 app.use(cors())
 app.use(express.json())
 
-// Test route
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Safebase API is running' })
-})
-app.get('/hello', (req, res) => {
-  res.json({ status: 'ok', message: 'hello' })
-})
+// Test routes
+// app.get('/health', (req, res) => {
+//   res.json({ status: 'ok', message: 'Safebase API is running' })
+// })
+// app.get('/hello', (req, res) => {
+//   res.json({ status: 'ok', message: 'hello' })
+// })
 
 const mysqlPool = require('./db/mysql')
 const pgPool = require('./db/postgres')
@@ -30,8 +30,8 @@ pgPool.connect()
   .then(() => console.log('PostgreSQL connected'))
   .catch(err => console.error('PostgreSQL error:', err.message))
 
-// Routes (we'll add them here later)
-// app.use('/api/databases', require('./routes/databases'))
+
+app.use('/api/databases', require('./routes/databases'))
 // app.use('/api/backups', require('./routes/backups'))
 // app.use('/api/schedules', require('./routes/schedules'))
 // app.use('/api/logs', require('./routes/logs'))
