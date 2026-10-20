@@ -10,9 +10,9 @@ app.use(cors())
 app.use(express.json())
 
 // Test routes
-// app.get('/health', (req, res) => {
-//   res.json({ status: 'ok', message: 'Safebase API is running' })
-// })
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Safebase API is running' })
+})
 // app.get('/hello', (req, res) => {
 //   res.json({ status: 'ok', message: 'hello' })
 // })
@@ -32,7 +32,8 @@ pgPool.connect()
 
 
 app.use('/api/databases', require('./routes/databases'))
-// app.use('/api/backups', require('./routes/backups'))
+app.use('/api/backups', require('./routes/backups'))
+
 // app.use('/api/schedules', require('./routes/schedules'))
 // app.use('/api/logs', require('./routes/logs'))
 
@@ -43,4 +44,3 @@ app.listen(PORT, () => {
   // after your middleware setup
   migrate().catch(console.error)
 })
-

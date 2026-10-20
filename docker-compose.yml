@@ -6,6 +6,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: safebase
+    command: --mysql-native-password=ON
     ports:
       - "3307:3306"
     volumes:
@@ -15,7 +16,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
   postgres:
     image: postgres:16-alpine
     container_name: safebase_postgres
@@ -49,6 +49,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backups:/app/backups
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   mysql_data:

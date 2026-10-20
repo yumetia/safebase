@@ -21,7 +21,6 @@ const migrateMysql = async () => {
       id INT AUTO_INCREMENT PRIMARY KEY,
       database_id INT NOT NULL,
       file_path VARCHAR(255) NOT NULL,
-      file_size_kb INT,
       status ENUM('success', 'failed') NOT NULL,
       triggered_by ENUM('manual', 'schedule') NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -76,7 +75,6 @@ const migratePg = async () => {
       id SERIAL PRIMARY KEY,
       database_id INT NOT NULL REFERENCES "database"(id),
       file_path VARCHAR(255) NOT NULL,
-      file_size_kb INT,
       status VARCHAR(50) NOT NULL,
       triggered_by VARCHAR(50) NOT NULL,
       created_at TIMESTAMP DEFAULT NOW()
