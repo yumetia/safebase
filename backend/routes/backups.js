@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const mysql = require('../db/mysql')
+const mysqlPool = require('../db/mysql')
 const { execSync } = require('child_process')
 const path = require('path')
 const fs = require('fs')
@@ -10,8 +10,7 @@ const BACKUP_DIR = '/app/backups'
 router.post('/', async (req, res) => {
   const { database_id } = req.body
 
-  // 1. fetch connection info
-  const [rows] = await mysql.query(
+  const [rows] = await mysqlPool.query(
     'SELECT * FROM `database` WHERE id = ?',
     [database_id]
   )
@@ -22,51 +21,90 @@ router.post('/', async (req, res) => {
   const filename = `${db.name}_${timestamp}.sql`
   const filepath = path.join(BACKUP_DIR, filename)
 
-  // 2. make sure backup folder exists
-  if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true })
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true })
 
-  try {
-   if (db.type === 'mysql') {
+    try {
+    // save log BEFORE running restore
+    await mysqlPool.query(
+        'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
+        [backup.id, 'restore', 'info', `Restore started from: ${backup.file_path}`]
+    )
+
+    // then run restore
+    if (db.type === 'mysql') {
         execSync(
-            `docker exec safebase_mysql mysqldump -u ${db.username} -p${db.password} ${db.db_name} > ${filepath}`
+        `docker exec -i safebase_mysql mysql -u ${db.username} -p${db.password} ${db.db_name}`,
+        { input: fs.readFileSync(backup.file_path) }
+        )
+    } else if (db.type === 'postgres') {
+        execSync(
+        `PGPASSWORD=${db.password} psql -h ${db.host} -p ${db.port} -U ${db.username} ${db.db_name}`,
+        { input: fs.readFileSync(backup.file_path) }
         )
     }
-    else if (db.type === 'postgres') {
-      execSync(
-        `PGPASSWORD=${db.password} pg_dump -h ${db.host} -p ${db.port} -U ${db.username} ${db.db_name} > ${filepath}`
-      )
+
+    res.json({ message: 'Restore successful' })
+
+    } catch (err) {
+        res.status(500).json({ message: 'Restore failed', error: err.message })
     }
-
-
-    // 5. save record in backup table
-    const [result] = await mysql.query(
-      'INSERT INTO backup (database_id, file_path, status, triggered_by) VALUES (?, ?, ?, ?)',
-      [database_id, filepath, 'success', 'manual']
-    )
-
-    // 6. save log
-    await mysql.query(
-      'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
-      [result.insertId, 'backup', 'info', `Backup created: ${filename}`]
-    )
-
-    res.json({ message: 'Backup successful', file: filename })
-
-  } catch (err) {
-    // save failed log
-    await mysql.query(
-      'INSERT INTO backup (database_id, file_path, status, triggered_by) VALUES (?,  ?, ?, ?)',
-      [database_id, filepath, 'failed', 'manual']
-    )
-    res.status(500).json({ message: 'Backup failed', error: err.message })
-  }
 })
 
 router.get('/', async (req, res) => {
-  const [rows] = await mysql.query(
+  const [rows] = await mysqlPool.query(
     'SELECT b.id, b.file_path, b.status, b.triggered_by, b.created_at, d.name as database_name FROM backup b JOIN `database` d ON b.database_id = d.id'
   )
   res.json(rows)
+})
+
+router.post('/restore/:id', async (req, res) => {
+  const [backups] = await mysqlPool.query(
+    'SELECT * FROM backup WHERE id = ?',
+    [req.params.id]
+  )
+  if (backups.length === 0) return res.status(404).json({ message: 'Backup not found' })
+
+  const backup = backups[0]
+
+  const [databases] = await mysqlPool.query(
+    'SELECT * FROM `database` WHERE id = ?',
+    [backup.database_id]
+  )
+  if (databases.length === 0) return res.status(404).json({ message: 'Database not found' })
+
+  const db = databases[0]
+
+  try {
+    if (db.type === 'mysql') {
+      execSync(
+        `docker exec -i safebase_mysql mysql -u ${db.username} -p${db.password} ${db.db_name}`,
+        { input: fs.readFileSync(backup.file_path) }
+      )
+    } else if (db.type === 'postgres') {
+      execSync(
+        `PGPASSWORD=${db.password} psql -h ${db.host} -p ${db.port} -U ${db.username} ${db.db_name}`,
+        { input: fs.readFileSync(backup.file_path) }
+      )
+    }
+
+    const backupId = backup.id
+    const dbRecord = databases[0]
+
+    // then after restore:
+    await mysqlPool.query(
+    'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
+    [backupId, 'restore', 'info', `Restore completed from: ${backup.file_path}`]
+    )
+
+    res.json({ message: 'Restore successful' })
+
+  } catch (err) {
+    await mysqlPool.query(
+      'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
+      [backup.id, 'restore', 'error', `Restore failed: ${err.message}`]
+    )
+    res.status(500).json({ message: 'Restore failed', error: err.message })
+  }
 })
 
 module.exports = router
