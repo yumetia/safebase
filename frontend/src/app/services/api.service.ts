@@ -37,4 +37,17 @@ export class ApiService {
   getLogs() {
     return this.http.get<any[]>(`${this.base}/logs`)
   }
+  downloadBackup(id: number) {
+    return this.http.get(`${this.base}/backups/download/${id}`, {
+      responseType: 'blob'
+    })
+  }
+
+  uploadBackup(database_id: number, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('database_id', database_id.toString())
+    return this.http.post(`${this.base}/backups/upload`, formData)
+  }
 }
+

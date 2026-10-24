@@ -1,12 +1,50 @@
+// add this import at the top if not there
+const path = require('path')
 const express = require('express')
 const router = express.Router()
 const mysqlPool = require('../db/mysql')
 const { execSync } = require('child_process')
-const path = require('path')
 const fs = require('fs')
 
 const BACKUP_DIR = '/app/backups'
 
+const multer = require('multer')
+
+const storage = multer.diskStorage({
+  destination: BACKUP_DIR,
+  filename: (req, file, cb) => cb(null, file.originalname)
+})
+const upload = multer({ storage })
+
+router.get('/download/:id', async (req, res) => {
+  const [backups] = await mysqlPool.query(
+    'SELECT * FROM backup WHERE id = ?',
+    [req.params.id]
+  )
+  if (backups.length === 0) return res.status(404).json({ message: 'Backup not found' })
+
+  const backup = backups[0]
+  res.download(backup.file_path, path.basename(backup.file_path))
+})
+
+router.post('/upload', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No file uploaded' })
+
+  const { database_id } = req.body
+  const filepath = path.join(BACKUP_DIR, req.file.originalname)
+
+  const [result] = await mysqlPool.query(
+    'INSERT INTO backup (database_id, file_path, status, triggered_by) VALUES (?, ?, ?, ?)',
+    [database_id, filepath, 'success', 'manual']
+  )
+
+  await mysqlPool.query(
+    'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
+    [result.insertId, 'backup', 'info', `Uploaded backup: ${req.file.originalname}`]
+  )
+
+  res.json({ message: 'File uploaded', file: req.file.originalname })
+})
 // POST /api/backups — trigger a backup
 router.post('/', async (req, res) => {
   const { database_id } = req.body
