@@ -34,13 +34,15 @@ pgPool.connect()
 app.use('/api/databases', require('./routes/databases'))
 app.use('/api/backups', require('./routes/backups'))
 app.use('/api/logs', require('./routes/logs'))
+app.use('/api/schedules', require('./routes/schedules'))
+const { loadSchedules } = require('./scheduler')
+const migrate = require('./db/migrate')
 
-// app.use('/api/schedules', require('./routes/schedules'))
-
-app.listen(PORT, () => {
+app.listen(PORT, async() => {
+    
   console.log(`Safebase API running on http://localhost:${PORT}`)
-  const migrate = require('./db/migrate')
-  
   // after your middleware setup
-  migrate().catch(console.error)
+  await migrate().catch(console.error)
+  await loadSchedules().catch(console.error)
 })
+
