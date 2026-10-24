@@ -1,15 +1,23 @@
 import { Component, OnInit } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { ApiService } from '../../services/api.service'
-
+import { FormsModule } from '@angular/forms'
 @Component({
+  
   selector: 'app-backups',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <h1>Backups</h1>
 
     <div class="card">
+      <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
+        <select [(ngModel)]="selectedDatabaseId" style="width: 200px;">
+          <option *ngFor="let db of databases" [value]="db.id">{{ db.name }}</option>
+        </select>
+        <input type="file" (change)="onFileSelected($event)" accept=".sql" />
+        <button class="btn-ghost" (click)="upload()">Upload backup</button>
+      </div>
       <table>
         <thead>
           <tr>
@@ -54,8 +62,13 @@ export class BackupsComponent implements OnInit {
 
   constructor(private api: ApiService) {}
 
+  // inject databases in ngOnInit
   ngOnInit() {
     this.api.getBackups().subscribe(data => this.backups = data)
+    this.api.getDatabases().subscribe(data => {
+      this.databases = data
+      if (data.length > 0) this.selectedDatabaseId = data[0].id
+    })
   }
 
   restore(id: number) {
@@ -73,6 +86,26 @@ export class BackupsComponent implements OnInit {
       a.download = `backup_${id}.sql`
       a.click()
       window.URL.revokeObjectURL(url)
+    })
+  }
+  selectedDatabaseId: number = 0
+  selectedFile: File | null = null
+  databases: any[] = []
+
+
+
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0]
+  }
+
+  upload() {
+    if (!this.selectedFile || !this.selectedDatabaseId) return
+    this.api.uploadBackup(this.selectedDatabaseId, this.selectedFile).subscribe({
+      next: () => {
+        this.message = 'File uploaded successfully'
+        this.api.getBackups().subscribe(data => this.backups = data)
+      },
+      error: () => this.message = 'Upload failed'
     })
   }
 }

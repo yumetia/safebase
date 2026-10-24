@@ -49,5 +49,17 @@ export class ApiService {
     formData.append('database_id', database_id.toString())
     return this.http.post(`${this.base}/backups/upload`, formData)
   }
+
+  getSchedules() {
+    return this.http.get<any[]>(`${this.base}/schedules`)
+  }
+
+  createSchedule(data: any) {
+    return this.http.post(`${this.base}/schedules`, data)
+  }
+
+  deleteSchedule(id: number) {
+    return this.http.delete(`${this.base}/schedules/${id}`)
+  }
 }
 
