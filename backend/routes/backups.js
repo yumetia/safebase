@@ -7,6 +7,7 @@ const fs = require('fs')
 
 const BACKUP_DIR = '/app/backups'
 
+// POST /api/backups — trigger a backup
 router.post('/', async (req, res) => {
   const { database_id } = req.body
 
@@ -21,35 +22,41 @@ router.post('/', async (req, res) => {
   const filename = `${db.name}_${timestamp}.sql`
   const filepath = path.join(BACKUP_DIR, filename)
 
-    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true })
+  if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true })
 
-    try {
-    // save log BEFORE running restore
-    await mysqlPool.query(
-        'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
-        [backup.id, 'restore', 'info', `Restore started from: ${backup.file_path}`]
+  try {
+    if (db.type === 'mysql') {
+      execSync(
+        `docker exec safebase_mysql mysqldump -u ${db.username} -p${db.password} ${db.db_name} > ${filepath}`
+      )
+    } else if (db.type === 'postgres') {
+      execSync(
+        `PGPASSWORD=${db.password} pg_dump -h ${db.host} -p ${db.port} -U ${db.username} ${db.db_name} > ${filepath}`
+      )
+    }
+
+    const [result] = await mysqlPool.query(
+      'INSERT INTO backup (database_id, file_path, status, triggered_by) VALUES (?, ?, ?, ?)',
+      [database_id, filepath, 'success', 'manual']
     )
 
-    // then run restore
-    if (db.type === 'mysql') {
-        execSync(
-        `docker exec -i safebase_mysql mysql -u ${db.username} -p${db.password} ${db.db_name}`,
-        { input: fs.readFileSync(backup.file_path) }
-        )
-    } else if (db.type === 'postgres') {
-        execSync(
-        `PGPASSWORD=${db.password} psql -h ${db.host} -p ${db.port} -U ${db.username} ${db.db_name}`,
-        { input: fs.readFileSync(backup.file_path) }
-        )
-    }
+    await mysqlPool.query(
+      'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
+      [result.insertId, 'backup', 'info', `Backup created: ${filename}`]
+    )
 
-    res.json({ message: 'Restore successful' })
+    res.json({ message: 'Backup successful', file: filename })
 
-    } catch (err) {
-        res.status(500).json({ message: 'Restore failed', error: err.message })
-    }
+  } catch (err) {
+    await mysqlPool.query(
+      'INSERT INTO backup (database_id, file_path, status, triggered_by) VALUES (?, ?, ?, ?)',
+      [database_id, filepath, 'failed', 'manual']
+    )
+    res.status(500).json({ message: 'Backup failed', error: err.message })
+  }
 })
 
+// GET /api/backups — list all backups
 router.get('/', async (req, res) => {
   const [rows] = await mysqlPool.query(
     'SELECT b.id, b.file_path, b.status, b.triggered_by, b.created_at, d.name as database_name FROM backup b JOIN `database` d ON b.database_id = d.id'
@@ -57,6 +64,7 @@ router.get('/', async (req, res) => {
   res.json(rows)
 })
 
+// POST /api/backups/restore/:id — restore a backup
 router.post('/restore/:id', async (req, res) => {
   const [backups] = await mysqlPool.query(
     'SELECT * FROM backup WHERE id = ?',
@@ -75,6 +83,12 @@ router.post('/restore/:id', async (req, res) => {
   const db = databases[0]
 
   try {
+    // save log BEFORE restore so it survives if safebase itself is restored
+    await mysqlPool.query(
+      'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
+      [backup.id, 'restore', 'info', `Restore started from: ${backup.file_path}`]
+    )
+
     if (db.type === 'mysql') {
       execSync(
         `docker exec -i safebase_mysql mysql -u ${db.username} -p${db.password} ${db.db_name}`,
@@ -87,22 +101,9 @@ router.post('/restore/:id', async (req, res) => {
       )
     }
 
-    const backupId = backup.id
-    const dbRecord = databases[0]
-
-    // then after restore:
-    await mysqlPool.query(
-    'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
-    [backupId, 'restore', 'info', `Restore completed from: ${backup.file_path}`]
-    )
-
     res.json({ message: 'Restore successful' })
 
   } catch (err) {
-    await mysqlPool.query(
-      'INSERT INTO log (backup_id, action, level, message) VALUES (?, ?, ?, ?)',
-      [backup.id, 'restore', 'error', `Restore failed: ${err.message}`]
-    )
     res.status(500).json({ message: 'Restore failed', error: err.message })
   }
 })

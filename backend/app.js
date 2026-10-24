@@ -33,9 +33,9 @@ pgPool.connect()
 
 app.use('/api/databases', require('./routes/databases'))
 app.use('/api/backups', require('./routes/backups'))
+app.use('/api/logs', require('./routes/logs'))
 
 // app.use('/api/schedules', require('./routes/schedules'))
-// app.use('/api/logs', require('./routes/logs'))
 
 app.listen(PORT, () => {
   console.log(`Safebase API running on http://localhost:${PORT}`)
