@@ -1,5 +1,5 @@
 import { Component } from '@angular/core'
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router'
+import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router'
 
 @Component({
   selector: 'app-root',
@@ -13,6 +13,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router'
         <a routerLink="/backups" routerLinkActive="active">Backups</a>
         <a routerLink="/schedules" routerLinkActive="active">Schedules</a>
         <a routerLink="/logs" routerLinkActive="active">Logs</a>
+        <button class="btn-danger" style="margin-top:auto;" (click)="logout()">Logout</button>
       </nav>
       <main class="main">
         <router-outlet />
@@ -20,4 +21,11 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router'
     </div>
   `
 })
-export class AppComponent {}
+export class AppComponent {
+  constructor(private router: Router) {}
+
+  logout() {
+    localStorage.removeItem('token')
+    this.router.navigate(['/login'])
+  }
+}

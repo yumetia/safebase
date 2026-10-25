@@ -30,11 +30,17 @@ pgPool.connect()
   .then(() => console.log('PostgreSQL connected'))
   .catch(err => console.error('PostgreSQL error:', err.message))
 
+const authMiddleware = require('./middleware/auth')
 
-app.use('/api/databases', require('./routes/databases'))
-app.use('/api/backups', require('./routes/backups'))
-app.use('/api/logs', require('./routes/logs'))
-app.use('/api/schedules', require('./routes/schedules'))
+// public routes
+app.use('/api/auth', require('./routes/auth'))
+
+// protected routes
+app.use('/api/databases', authMiddleware, require('./routes/databases'))
+app.use('/api/backups', authMiddleware, require('./routes/backups'))
+app.use('/api/schedules', authMiddleware, require('./routes/schedules'))
+app.use('/api/logs', authMiddleware, require('./routes/logs'))
+
 const { loadSchedules } = require('./scheduler')
 const migrate = require('./db/migrate')
 
