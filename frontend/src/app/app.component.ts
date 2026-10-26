@@ -13,6 +13,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/rou
         <a routerLink="/backups" routerLinkActive="active">Backups</a>
         <a routerLink="/schedules" routerLinkActive="active">Schedules</a>
         <a routerLink="/logs" routerLinkActive="active">Logs</a>
+        <a routerLink="/destinations" routerLinkActive="active">Destinations</a>
         <button class="btn-danger" style="margin-top:auto;" (click)="logout()">Logout</button>
       </nav>
       <main class="main">

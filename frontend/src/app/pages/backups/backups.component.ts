@@ -15,6 +15,11 @@ import { FormsModule } from '@angular/forms'
         <select [(ngModel)]="selectedDatabaseId" style="width: 200px;">
           <option *ngFor="let db of databases" [value]="db.id">{{ db.name }}</option>
         </select>
+        <select [(ngModel)]="selectedDestinationId" style="width: 200px;">
+          <option [ngValue]="null">Local (default)</option>
+          <option *ngFor="let d of destinations" [ngValue]="d.id">{{ d.name }} ({{ d.host }})</option>
+        </select>
+        <button class="btn-primary" (click)="triggerBackup()">Trigger Backup</button>
         <label style="
           padding: 0.45rem 0.9rem;
           border-radius: 6px;
@@ -84,10 +89,13 @@ export class BackupsComponent implements OnInit {
   selectedDatabaseId: number = 0
   selectedFile: File | null = null
   message = ''
+  destinations: any[] = []
+  selectedDestinationId: number | null = null
 
   constructor(private api: ApiService) {}
 
   ngOnInit() {
+    this.api.getDestinations().subscribe(data => this.destinations = data)
     this.api.getBackups().subscribe(data => this.backups = data)
     this.api.getDatabases().subscribe(data => {
       this.databases = data
@@ -126,6 +134,16 @@ export class BackupsComponent implements OnInit {
       a.download = `backup_${id}.sql`
       a.click()
       window.URL.revokeObjectURL(url)
+    })
+  }
+
+  triggerBackup() {
+    this.api.triggerBackup(this.selectedDatabaseId, this.selectedDestinationId).subscribe({
+      next: (res: any) => {
+        this.message = `Backup successful — ${res.destination ?? 'local'}`
+        this.api.getBackups().subscribe(data => this.backups = data)
+      },
+      error: () => this.message = 'Backup failed'
     })
   }
 }

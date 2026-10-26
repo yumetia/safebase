@@ -5,6 +5,7 @@ import { DatabasesComponent } from './pages/databases/databases.component'
 import { BackupsComponent } from './pages/backups/backups.component'
 import { SchedulesComponent } from './pages/schedules/schedules.component'
 import { LogsComponent } from './pages/logs/logs.component'
+import { DestinationsComponent } from './components/destinations/destinations.component'
 
 export const routes: Routes = [
   { path: 'login', component: AuthComponent },
@@ -13,4 +14,5 @@ export const routes: Routes = [
   { path: 'backups', component: BackupsComponent, canActivate: [AuthGuard] },
   { path: 'schedules', component: SchedulesComponent, canActivate: [AuthGuard] },
   { path: 'logs', component: LogsComponent, canActivate: [AuthGuard] },
+  { path: 'destinations', component: DestinationsComponent, canActivate: [AuthGuard] },
 ]

@@ -40,6 +40,7 @@ app.use('/api/databases', authMiddleware, require('./routes/databases'))
 app.use('/api/backups', authMiddleware, require('./routes/backups'))
 app.use('/api/schedules', authMiddleware, require('./routes/schedules'))
 app.use('/api/logs', authMiddleware, require('./routes/logs'))
+app.use('/api/destinations', authMiddleware, require('./routes/destinations'))
 
 const { loadSchedules } = require('./scheduler')
 const migrate = require('./db/migrate')

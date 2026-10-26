@@ -23,7 +23,7 @@ router.post('/register', async (req, res) => {
     [email, hashed]
   )
 
-  const token = jwt.sign({ id: result.insertId, email }, SECRET, { expiresIn: '24h' })
+  const token = jwt.sign({ id: result.insertId, email }, SECRET, { expiresIn: '90d' })
 
   res.json({ token, message: 'Account created' })
 })
@@ -42,7 +42,7 @@ router.post('/login', async (req, res) => {
   const valid = await bcrypt.compare(password, user.password)
   if (!valid) return res.status(401).json({ message: 'Invalid credentials' })
 
-  const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '24h' })
+  const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '90d' })
 
   res.json({ token, message: 'Login successful' })
 })

@@ -21,6 +21,9 @@ router.post('/', async (req, res) => {
     [database_id]
   )
   if (db.length === 0) return res.status(404).json({ message: 'Database not found' })
+  if (parts.length < 5 || parts.length > 6) {
+    return res.status(400).json({ message: 'Invalid cron — needs 5 fields (e.g. 0 2 * * *)' })
+  }
 
   const [result] = await mysqlPool.query(
     'INSERT INTO schedule (database_id, cron_expression, is_active) VALUES (?, ?, ?)',

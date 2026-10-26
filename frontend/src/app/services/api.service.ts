@@ -39,10 +39,6 @@ export class ApiService {
     return this.http.get<any[]>(`${this.base}/backups`, this.getHeaders())
   }
 
-  triggerBackup(database_id: number) {
-    return this.http.post(`${this.base}/backups`, { database_id }, this.getHeaders())
-  }
-
   restoreBackup(id: number) {
     return this.http.post(`${this.base}/backups/restore/${id}`, {}, this.getHeaders())
   }
@@ -81,5 +77,21 @@ export class ApiService {
   // logs
   getLogs() {
     return this.http.get<any[]>(`${this.base}/logs`, this.getHeaders())
+  }
+
+  triggerBackup(database_id: number, destination_id?: number | null) {
+    return this.http.post(`${this.base}/backups`, { database_id, destination_id }, this.getHeaders())
+  }
+
+  getDestinations() {
+    return this.http.get<any[]>(`${this.base}/destinations`, this.getHeaders())
+  }
+
+  addDestination(data: any) {
+    return this.http.post(`${this.base}/destinations`, data, this.getHeaders())
+  }
+
+  deleteDestination(id: number) {
+    return this.http.delete(`${this.base}/destinations/${id}`, this.getHeaders())
   }
 }
