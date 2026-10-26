@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core'
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { ApiService } from '../../services/api.service'
 import { FormsModule } from '@angular/forms'
+
 @Component({
-  
   selector: 'app-backups',
   standalone: true,
   imports: [CommonModule, FormsModule],
@@ -15,9 +15,29 @@ import { FormsModule } from '@angular/forms'
         <select [(ngModel)]="selectedDatabaseId" style="width: 200px;">
           <option *ngFor="let db of databases" [value]="db.id">{{ db.name }}</option>
         </select>
-        <input type="file" (change)="onFileSelected($event)" accept=".sql" />
-        <button class="btn-ghost" (click)="upload()">Upload backup</button>
+        <label style="
+          padding: 0.45rem 0.9rem;
+          border-radius: 6px;
+          border: 1px solid #d0d7de;
+          background: #f6f8fa;
+          color: #1f2328;
+          font-size: 0.825rem;
+          font-weight: 500;
+          cursor: pointer;
+        ">
+          {{ selectedFile ? selectedFile.name : 'Choose file' }}
+          <input
+            type="file"
+            accept=".sql"
+            style="display:none"
+            (change)="onFileSelected($event)"
+          />
+        </label>
+        <button class="btn-blue" (click)="upload()" [disabled]="!selectedFile">
+          Upload
+        </button>
       </div>
+
       <table>
         <thead>
           <tr>
@@ -57,17 +77,37 @@ import { FormsModule } from '@angular/forms'
   `
 })
 export class BackupsComponent implements OnInit {
+  @ViewChild('fileInput') fileInput!: ElementRef
+
   backups: any[] = []
+  databases: any[] = []
+  selectedDatabaseId: number = 0
+  selectedFile: File | null = null
   message = ''
 
   constructor(private api: ApiService) {}
 
-  // inject databases in ngOnInit
   ngOnInit() {
     this.api.getBackups().subscribe(data => this.backups = data)
     this.api.getDatabases().subscribe(data => {
       this.databases = data
       if (data.length > 0) this.selectedDatabaseId = data[0].id
+    })
+  }
+
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0]
+  }
+
+  upload() {
+    if (!this.selectedFile || !this.selectedDatabaseId) return
+    this.api.uploadBackup(this.selectedDatabaseId, this.selectedFile).subscribe({
+      next: () => {
+        this.message = 'File uploaded successfully'
+        this.selectedFile = null
+        this.api.getBackups().subscribe(data => this.backups = data)
+      },
+      error: () => this.message = 'Upload failed'
     })
   }
 
@@ -86,26 +126,6 @@ export class BackupsComponent implements OnInit {
       a.download = `backup_${id}.sql`
       a.click()
       window.URL.revokeObjectURL(url)
-    })
-  }
-  selectedDatabaseId: number = 0
-  selectedFile: File | null = null
-  databases: any[] = []
-
-
-
-  onFileSelected(event: any) {
-    this.selectedFile = event.target.files[0]
-  }
-
-  upload() {
-    if (!this.selectedFile || !this.selectedDatabaseId) return
-    this.api.uploadBackup(this.selectedDatabaseId, this.selectedFile).subscribe({
-      next: () => {
-        this.message = 'File uploaded successfully'
-        this.api.getBackups().subscribe(data => this.backups = data)
-      },
-      error: () => this.message = 'Upload failed'
     })
   }
 }

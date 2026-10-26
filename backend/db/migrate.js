@@ -3,8 +3,18 @@ const pg = require('./postgres')
 
 const migrateMysql = async () => {
   await mysql.query(`
+    CREATE TABLE IF NOT EXISTS user (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  await mysql.query(`
     CREATE TABLE IF NOT EXISTS \`database\` (
       id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
       name VARCHAR(255) NOT NULL,
       type ENUM('mysql', 'postgres') NOT NULL,
       host VARCHAR(255) NOT NULL,
@@ -12,7 +22,8 @@ const migrateMysql = async () => {
       db_name VARCHAR(255) NOT NULL,
       username VARCHAR(255) NOT NULL,
       password VARCHAR(255) NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES user(id)
     )
   `)
 
